@@ -6,6 +6,7 @@ import axios from 'axios';
 import { withAuth0 } from '@auth0/auth0-react';
 import { Card, Button, Modal, InputGroup, FormControl } from 'react-bootstrap/';
 import FormModal from './component/FormModal';
+import UpdateForms from './component/UpdateForms';
 
 
 
@@ -17,13 +18,15 @@ class MyFavoriteBooks extends React.Component {
     super(props);
     this.state = {
       books: [],
-      showCatsComponent: false,
+      showBookcomponents: false,
       showBooks: false,
       showModal: false,
       bookName: '',
       description: '',
       imgUrl: '',
       status: '',
+      showUpdateStatus: false,
+      index: 0,
     }
 
   }
@@ -32,7 +35,7 @@ class MyFavoriteBooks extends React.Component {
     const bookData = await axios.get(`http://localhost:3001/books?name=${this.props.auth0.user.email}`);
     this.setState({
       books: bookData.data,
-      showCatsComponent: true,
+      showBookcomponents: true,
     });
   }
 
@@ -108,6 +111,49 @@ class MyFavoriteBooks extends React.Component {
     })
   }
 
+  updateBook = (idx) => {
+    const indexBook = this.state.books.books.filter((value, index) => {
+      return idx === index;
+    })
+    this.setState({
+
+      showUpdateStatus: true,
+      bookName: indexBook[0].name,
+      description: indexBook[0].description,
+      imgUrl: indexBook[0].img,
+      status: indexBook[0].status,
+      index: idx,
+    })
+  }
+  handleShowModalU = () => {
+    this.setState({
+      showUpdateStatus: true
+    })
+  }
+
+  handleCloseModalU = () => {
+    this.setState({
+      showUpdateStatus: false
+    })
+  }
+
+  editBook = async (event) => {
+    event.preventDefault();
+    const bookData = {
+      bookName: this.state.bookName,
+      description: this.state.description,
+      imgUrl: this.state.imgUrl,
+      status: this.state.status,
+      email: this.props.auth0.user.email,
+    }
+    let booksData = await axios.put(`http://localhost:3001/editBook/${this.state.index}`, bookData);
+    this.setState({
+      books: booksData.data,
+      showUpdateStatus: false,
+
+    })
+  }
+
 
   render() {
     return (
@@ -118,12 +164,33 @@ class MyFavoriteBooks extends React.Component {
         </p>
         <Button variant="primary" onClick={this.handleShowModal}>Add a Book</Button>
 
-        {this.state.showModal && <FormModal closeModalFx={this.handleCloseModal} showModal={this.state.showModal} updateBookName={this.updateBookName} updateDescription={this.updateDescription} updateImgUrl={this.updateImgUrl} updatestatus={this.updatestatus} addBook={this.addBook} />}
+        {this.state.showModal &&
+          <FormModal closeModalFx={this.handleCloseModal}
+            showModal={this.state.showModal}
+            updateBookName={this.updateBookName}
+            updateDescription={this.updateDescription}
+            updateImgUrl={this.updateImgUrl}
+            updatestatus={this.updatestatus}
+            addBook={this.addBook} />}
+
+        {this.state.showUpdateStatus &&
+          <UpdateForms
+            closeModalFx={this.handleCloseModalU}
+            showUpdateStatus={this.state.showUpdateStatus}
+            bookName={this.state.bookName}
+            description={this.state.description}
+            imgUrl={this.state.imgUrl}
+            status={this.state.status}
+            updateBookName={this.updateBookName}
+            updateDescription={this.updateDescription}
+            updateImgUrl={this.updateImgUrl}
+            updatestatus={this.updatestatus}
+            editBook={this.editBook} />}
 
         <>
 
 
-          { this.state.showCatsComponent &&
+          { this.state.showBookcomponents &&
             this.state.books.books.map((item, idx) => {
               return (
 
@@ -137,7 +204,8 @@ class MyFavoriteBooks extends React.Component {
                         {item.status}
                         {item.description}
                       </Card.Text>
-                      <Button variant="primary" onClick={()=>this.deleteBook(idx)}>Delete</Button>
+                      <Button variant="primary" onClick={() => this.deleteBook(idx)}>Delete</Button>
+                      <Button variant="primary" onClick={() => this.updateBook(idx)}>Update</Button>
                     </Card.Body>
                   </Card>
                 </div>
